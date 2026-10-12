@@ -1,0 +1,25 @@
+# Datasets and run outputs (never commit)
+data/
+outputs/
+*.zip
+*.exr
+*.IMG
+*.img
+*.tif
+*.tiff
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+.venv/
+venv/
+
+# Editors / OS
+.vscode/
+.idea/
+.DS_Store
+
+# Scratch output of tools/giant/sfn_smoke.py
+tools/work/

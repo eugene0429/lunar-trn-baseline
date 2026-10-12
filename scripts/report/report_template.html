@@ -1,0 +1,853 @@
+<title>T-I 파이프라인 단계별 도해</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Hahmlet:wght@500;650&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans+KR:wght@400;500;600&display=swap">
+<style>
+/* Layout: a 68ch report column with a sticky stage index on wide screens; figure plates break out to the full 1120px frame. */
+:root {
+  --bg: #f3f4f6;
+  --surface: #ffffff;
+  --plate: #fbfbfa;
+  --ink: #15181c;
+  --ink-2: #474d56;
+  --ink-3: #6a7079;
+  --rule: #d7dbe0;
+  --accent: #9a5200;
+  --accent-soft: #f5e6d2;
+  --link: #1d5fb3;
+  --series-1: #2a78d6;
+  --series-2: #eb6834;
+  --series-3: #1baf7a;
+  --series-4: #c98500;
+  --good: #17784a;
+  --bad: #b83227;
+  --font-display: "Hahmlet", "Noto Serif KR", "Apple SD Gothic Neo", serif;
+  --font-body: "IBM Plex Sans KR", "Apple SD Gothic Neo", "Malgun Gothic", "Noto Sans KR", system-ui, sans-serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
+  --measure: 68ch;
+  --frame: 1120px;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0f1215; --surface: #161a1f; --plate: #fbfbfa; --ink: #e7e9ec; --ink-2: #b6bcc4; --ink-3: #8c939c;
+    --rule: #2b3139; --accent: #f0a548; --accent-soft: #3a2a15; --link: #73aef2;
+    --series-1: #3987e5; --series-2: #d95926; --series-3: #199e70; --series-4: #c98500;
+    --good: #46c487; --bad: #ef6f62; color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0f1215; --surface: #161a1f; --plate: #fbfbfa; --ink: #e7e9ec; --ink-2: #b6bcc4; --ink-3: #8c939c;
+  --rule: #2b3139; --accent: #f0a548; --accent-soft: #3a2a15; --link: #73aef2;
+  --series-1: #3987e5; --series-2: #d95926; --series-3: #199e70; --series-4: #c98500;
+  --good: #46c487; --bad: #ef6f62; color-scheme: dark;
+}
+* { box-sizing: border-box; }
+html { scroll-behavior: smooth; scroll-padding-top: 24px; }
+@media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } }
+body {
+  background: var(--bg); color: var(--ink); font-family: var(--font-body); font-size: 16px; line-height: 1.72;
+  padding-inline: 16px; padding-block: 0 64px; -webkit-font-smoothing: antialiased;
+}
+a { color: var(--link); text-underline-offset: 2px; }
+a:focus-visible, button:focus-visible, summary:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 3px; }
+code, .mono { font-family: var(--font-mono); font-size: 0.86em; }
+code { background: color-mix(in srgb, var(--ink) 7%, transparent); padding: 0.08em 0.35em; border-radius: 4px; }
+.page { max-width: var(--frame); margin: 0 auto; display: grid; grid-template-columns: minmax(0, 1fr); gap: 40px; }
+@media (min-width: 1180px) { .page { grid-template-columns: 210px minmax(0, 1fr); max-width: calc(var(--frame) + 250px); } }
+
+/* Stage index */
+.toc { padding-top: 36px; font-size: 0.86rem; }
+.toc-inner { position: sticky; top: calc(env(safe-area-inset-top, 0px) + 20px); }
+.toc h2 { font-family: var(--font-mono); font-size: 0.72rem; letter-spacing: 0.08em; text-transform: uppercase; color: var(--ink-3); margin: 0 0 10px; font-weight: 500; }
+.toc ol { list-style: none; margin: 0; padding: 0; display: grid; gap: 2px; }
+.toc a { display: grid; grid-template-columns: 2.1em 1fr; gap: 4px; padding: 5px 8px; border-radius: 6px; color: var(--ink-2); text-decoration: none; line-height: 1.4; }
+.toc a .n { font-family: var(--font-mono); color: var(--ink-3); font-size: 0.8rem; }
+.toc a:hover { background: color-mix(in srgb, var(--ink) 6%, transparent); color: var(--ink); }
+.toc a.active { background: var(--accent-soft); color: var(--ink); }
+.toc a.active .n { color: var(--accent); }
+@media (max-width: 1179px) {
+  .toc { padding-top: 24px; }
+  .toc-inner { position: static; border: 1px solid var(--rule); border-radius: 10px; padding: 14px 14px 10px; background: var(--surface); }
+  .toc ol { grid-template-columns: repeat(auto-fill, minmax(min(230px, 100%), 1fr)); }
+}
+
+main { min-width: 0; }
+.prose { max-width: var(--measure); }
+header.hero { padding-top: 44px; padding-bottom: 8px; }
+.eyebrow { font-family: var(--font-mono); font-size: 0.74rem; letter-spacing: 0.08em; text-transform: uppercase; color: var(--accent); margin: 0 0 12px; }
+h1 { font-family: var(--font-display); font-weight: 650; font-size: clamp(2rem, 4.4vw, 3rem); line-height: 1.18; margin: 0 0 18px; letter-spacing: -0.01em; text-wrap: balance; }
+h2 { font-family: var(--font-display); font-weight: 650; font-size: clamp(1.45rem, 2.6vw, 1.85rem); line-height: 1.3; margin: 0 0 14px; text-wrap: balance; }
+h3 { font-size: 1.12rem; font-weight: 600; margin: 34px 0 8px; line-height: 1.45; text-wrap: balance; }
+p { margin: 0 0 14px; }
+.lede { font-size: 1.08rem; color: var(--ink-2); }
+.meta { font-family: var(--font-mono); font-size: 0.76rem; color: var(--ink-3); margin-top: 18px; }
+
+section.stage { padding-top: 56px; margin-top: 8px; border-top: 1px solid var(--rule); }
+.stage-head { display: grid; gap: 4px; margin-bottom: 10px; }
+.stage-head .eyebrow { margin: 0; }
+
+/* Error ladder */
+.ladder { margin: 30px 0 8px; padding: 22px 20px 16px; background: var(--surface); border: 1px solid var(--rule); border-radius: 12px; }
+.ladder-title { font-size: 0.84rem; color: var(--ink-2); margin: 0 0 4px; font-weight: 500; }
+.ladder-track { position: relative; height: 128px; margin: 0 6px; }
+.ladder-axis { position: absolute; left: 0; right: 0; top: 64px; height: 2px; background: var(--rule); }
+.ladder-tick { position: absolute; top: 60px; width: 1px; height: 10px; background: var(--ink-3); }
+.ladder-tick span { position: absolute; top: 12px; left: 50%; transform: translateX(-50%); font-family: var(--font-mono); font-size: 0.68rem; color: var(--ink-3); white-space: nowrap; }
+.ladder-pt { position: absolute; top: 57px; width: 16px; height: 16px; margin-left: -8px; border-radius: 50%; border: 2px solid var(--surface); }
+.ladder-lab { position: absolute; transform: translateX(-50%); text-align: center; font-size: 0.78rem; line-height: 1.25; white-space: nowrap; }
+.ladder-lab b { display: block; font-family: var(--font-mono); font-size: 0.95rem; font-weight: 500; }
+.ladder-ref { position: absolute; top: 40px; height: 48px; border-left: 1.5px dashed var(--ink-3); }
+.ladder-ref span { position: absolute; top: 52px; left: 4px; font-size: 0.7rem; color: var(--ink-3); white-space: nowrap; }
+.facts { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(150px, 100%), 1fr)); gap: 1px; background: var(--rule); border: 1px solid var(--rule); border-radius: 10px; overflow: hidden; margin: 18px 0 0; }
+.facts div { background: var(--surface); padding: 12px 14px; }
+.facts dt { font-size: 0.74rem; color: var(--ink-3); }
+.facts dd { margin: 2px 0 0; font-family: var(--font-mono); font-size: 0.95rem; font-variant-numeric: tabular-nums; }
+
+/* Pipeline flow */
+.flow { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(200px, 100%), 1fr)); gap: 12px; margin: 22px 0 18px; counter-reset: none; }
+.flow a.step { display: flex; flex-direction: column; gap: 6px; background: var(--surface); border: 1px solid var(--rule); border-radius: 10px; padding: 14px 14px 12px; color: var(--ink); text-decoration: none; position: relative; min-width: 0; }
+.flow a.step:hover { border-color: var(--accent); }
+.flow .num { font-family: var(--font-mono); font-size: 0.72rem; color: var(--accent); letter-spacing: 0.06em; }
+.flow .name { font-weight: 600; font-size: 1rem; line-height: 1.35; }
+.flow ul { margin: 0; padding-left: 1.05em; font-size: 0.84rem; color: var(--ink-2); line-height: 1.55; }
+.flow .out { margin-top: auto; padding-top: 6px; border-top: 1px dashed var(--rule); font-size: 0.78rem; color: var(--ink-3); }
+
+/* Figures */
+figure.fig { margin: 26px 0 30px; max-width: 100%; }
+.plate { display: block; width: 100%; padding: 12px; background: var(--plate); border: 1px solid var(--rule); border-radius: 8px; cursor: zoom-in; font: inherit; }
+.plate img { display: block; width: 100%; height: auto; max-width: 100%; }
+figcaption { font-size: 0.88rem; color: var(--ink-2); margin-top: 10px; max-width: var(--measure); line-height: 1.62; }
+.fig-no { font-family: var(--font-mono); font-size: 0.76rem; color: var(--accent); margin-right: 6px; letter-spacing: 0.04em; }
+.fig.narrow { max-width: 760px; }
+
+/* Tables */
+.table-wrap { overflow-x: auto; margin: 18px 0 22px; border: 1px solid var(--rule); border-radius: 10px; background: var(--surface); }
+table { border-collapse: collapse; width: 100%; font-size: 0.86rem; font-variant-numeric: tabular-nums; }
+th, td { padding: 8px 12px; text-align: left; border-bottom: 1px solid var(--rule); vertical-align: top; }
+th { font-weight: 600; color: var(--ink-2); font-size: 0.78rem; background: color-mix(in srgb, var(--ink) 3%, var(--surface)); white-space: nowrap; }
+tr:last-child td { border-bottom: none; }
+td.num, th.num { text-align: right; font-family: var(--font-mono); font-size: 0.82rem; white-space: nowrap; }
+.src { font-family: var(--font-mono); font-size: 0.72rem; padding: 1px 6px; border-radius: 4px; white-space: nowrap; display: inline-block; }
+.src.lvs { background: color-mix(in srgb, var(--series-1) 16%, transparent); color: var(--ink); }
+.src.dec { background: var(--accent-soft); color: var(--ink); }
+.ok { color: var(--good); font-weight: 600; }
+.ng { color: var(--bad); font-weight: 600; }
+.matrix td.num { font-size: 0.9rem; }
+.matrix td.diag { background: color-mix(in srgb, var(--series-3) 14%, transparent); }
+
+/* Callouts */
+.note { border-left: 3px solid var(--accent); background: var(--surface); padding: 12px 16px; border-radius: 0 8px 8px 0; margin: 18px 0; font-size: 0.93rem; color: var(--ink-2); max-width: var(--measure); }
+.note strong { color: var(--ink); }
+.eq { font-family: var(--font-mono); font-size: 0.88rem; background: var(--surface); border: 1px solid var(--rule); border-radius: 8px; padding: 10px 14px; margin: 12px 0 16px; overflow-x: auto; white-space: pre; max-width: var(--measure); }
+
+/* Funnel */
+.funnels { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(380px, 100%), 1fr)); gap: 18px; margin: 18px 0 24px; }
+.funnel { background: var(--surface); border: 1px solid var(--rule); border-radius: 10px; padding: 16px 16px 12px; min-width: 0; }
+.funnel h4 { margin: 0 0 12px; font-size: 0.92rem; font-weight: 600; }
+.frow { display: grid; grid-template-columns: minmax(0, 9.5em) minmax(0, 1fr) 3em; align-items: center; gap: 10px; font-size: 0.8rem; margin-bottom: 7px; }
+.frow .lab { color: var(--ink-2); line-height: 1.3; }
+.frow .bar { height: 14px; background: color-mix(in srgb, var(--ink) 7%, transparent); border-radius: 0 4px 4px 0; overflow: hidden; }
+.frow .bar i { display: block; height: 100%; background: var(--series-1); border-radius: 0 4px 4px 0; }
+.frow.final .bar i { background: var(--series-3); }
+.frow .v { font-family: var(--font-mono); text-align: right; font-variant-numeric: tabular-nums; }
+.funnel .drop { font-size: 0.76rem; color: var(--ink-3); margin: 8px 0 0; line-height: 1.5; }
+
+/* Charts */
+.charts { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(440px, 100%), 1fr)); gap: 18px; margin: 18px 0 26px; }
+.chart { background: var(--surface); border: 1px solid var(--rule); border-radius: 10px; padding: 14px 14px 8px; position: relative; min-width: 0; }
+.chart h4 { margin: 0 0 2px; font-size: 0.92rem; font-weight: 600; }
+.chart .sub { margin: 0 0 6px; font-size: 0.78rem; color: var(--ink-3); }
+.legend { display: flex; flex-wrap: wrap; gap: 4px 14px; font-size: 0.76rem; color: var(--ink-2); margin: 4px 0 2px; }
+.legend span { display: inline-flex; align-items: center; gap: 6px; }
+.legend i { width: 14px; height: 3px; border-radius: 2px; display: inline-block; }
+.legend i.dash { background: repeating-linear-gradient(90deg, currentColor 0 4px, transparent 4px 7px) !important; color: var(--ink-3); }
+.chart svg { display: block; width: 100%; height: auto; overflow: visible; }
+.chart svg text { font-family: var(--font-body); font-size: 11px; fill: var(--ink-3); }
+.chart svg .lbl { fill: var(--ink-2); font-size: 11px; font-weight: 500; }
+.chart .grid line { stroke: var(--rule); stroke-width: 1; }
+.chart .axis line { stroke: var(--ink-3); }
+.chart .band { fill: color-mix(in srgb, var(--accent) 10%, transparent); }
+.chart .band-t { fill: var(--accent); font-size: 10.5px; }
+.chart .cross { stroke: var(--ink-3); stroke-width: 1; stroke-dasharray: 3 3; }
+.tip { position: absolute; pointer-events: none; background: var(--surface); border: 1px solid var(--rule); border-radius: 8px; padding: 8px 10px; font-size: 0.76rem; line-height: 1.5; box-shadow: 0 4px 16px rgba(0,0,0,0.12); min-width: 140px; z-index: 3; }
+.tip b { display: block; font-weight: 600; margin-bottom: 2px; }
+.tip .r { display: flex; justify-content: space-between; gap: 12px; font-variant-numeric: tabular-nums; }
+.tip .r i { width: 8px; height: 8px; border-radius: 50%; display: inline-block; margin-right: 6px; }
+details.data { margin: 4px 0 6px; font-size: 0.8rem; }
+details.data summary { cursor: pointer; color: var(--ink-3); }
+details.data table { margin-top: 6px; font-size: 0.78rem; }
+details.data th, details.data td { padding: 4px 8px; }
+
+pre.cmd { background: var(--surface); border: 1px solid var(--rule); border-radius: 8px; padding: 14px 16px; overflow-x: auto; font-family: var(--font-mono); font-size: 0.8rem; line-height: 1.6; max-width: 100%; }
+ul.tight { padding-left: 1.2em; margin: 0 0 14px; }
+ul.tight li { margin-bottom: 4px; }
+
+/* Lightbox */
+dialog#zoom { border: none; padding: 0; background: transparent; max-width: 96vw; max-height: 94vh; }
+dialog#zoom::backdrop { background: rgba(8, 10, 12, 0.82); }
+dialog#zoom img { display: block; max-width: 96vw; max-height: 90vh; width: auto; height: auto; background: #fbfbfa; border-radius: 6px; cursor: zoom-out; }
+dialog#zoom p { color: #e7e9ec; font-size: 0.8rem; margin: 8px 2px 0; text-align: center; }
+</style>
+
+<div class="page">
+<nav class="toc" aria-label="목차">
+  <div class="toc-inner">
+    <h2>목차</h2>
+    <ol id="toc-list">
+      <li><a href="#overview"><span class="n">0</span><span>파이프라인 한눈에</span></a></li>
+      <li><a href="#inputs"><span class="n">1</span><span>입력과 좌표계</span></a></li>
+      <li><a href="#maps"><span class="n">2</span><span>탑재 지도 생성</span></a></li>
+      <li><a href="#prior"><span class="n">3</span><span>사전 자세</span></a></li>
+      <li><a href="#coarse"><span class="n">4</span><span>거친 정합</span></a></li>
+      <li><a href="#fine"><span class="n">5</span><span>정밀 정합</span></a></li>
+      <li><a href="#pose"><span class="n">6</span><span>판정과 공분산</span></a></li>
+      <li><a href="#validation"><span class="n">7</span><span>검증 결과 V2·V3</span></a></li>
+      <li><a href="#failures"><span class="n">8</span><span>실패 양상과 한계</span></a></li>
+      <li><a href="#repro"><span class="n">9</span><span>재현 방법</span></a></li>
+    </ol>
+  </div>
+</nav>
+
+<main>
+<header class="hero prose" style="max-width: none;">
+  <p class="eyebrow">lunar-trn-baseline · T-I 밝기 템플릿 매칭 · LVS형 2단 지도 매칭</p>
+  <h1>T-I 파이프라인 단계별 도해</h1>
+  <p class="lede prose">StereoLunar nadir 영상 한 장이 오차 2.4 km의 사전 자세에서 출발해 9.6 m 고정에 이른다. 이 보고서는 그 과정을 지도 생성, 거친 정합, 정밀 정합, 판정의 네 단계로 나누고, 각 단계가 실제로 만든 중간 산출물을 그림으로 보여 준다. 끝의 두 절은 V2·V3 검증 결과와 실패 양상이다.</p>
+
+  <div class="ladder" role="img" aria-label="예시 실행의 수평 오차: 사전 2,372 m, 거친 단계 후 13.2 m, 정밀 단계 후 9.6 m. 정밀 지도 1픽셀은 15.4 m, 오고정 허용치는 46.2 m.">
+    <p class="ladder-title">예시 실행의 수평 오차 (로그 축, 1 m – 10 km)</p>
+    <div class="ladder-track">
+      <div class="ladder-axis"></div>
+      <div class="ladder-tick" style="left:0%"><span>1 m</span></div>
+      <div class="ladder-tick" style="left:25%"><span>10 m</span></div>
+      <div class="ladder-tick" style="left:50%"><span>100 m</span></div>
+      <div class="ladder-tick" style="left:75%"><span>1 km</span></div>
+      <div class="ladder-tick" style="left:100%"><span>10 km</span></div>
+      <div class="ladder-ref" style="left:29.69%"><span>정밀 지도 1 px · 15.4 m</span></div>
+      <div class="ladder-ref" style="left:41.62%"><span style="top:68px">오고정 허용치 3 px · 46.2 m</span></div>
+      <div class="ladder-pt" style="left:84.38%; background: var(--ink-3);"></div>
+      <div class="ladder-pt" style="left:28.03%; background: var(--series-2);"></div>
+      <div class="ladder-pt" style="left:24.58%; background: var(--series-3);"></div>
+      <div class="ladder-lab" style="left:84.38%; top:2px;"><b>2,372 m</b>사전 자세</div>
+      <div class="ladder-lab" style="left:28.03%; top:2px; transform: translateX(-6px); text-align: left;"><b>13.2 m</b>거친 후</div>
+      <div class="ladder-lab" style="left:24.58%; top:2px; transform: translateX(calc(-100% + 2px)); text-align: right;"><b>9.6 m</b>정밀 후</div>
+    </div>
+  </div>
+  <dl class="facts">
+    <div><dt>예시 영상</dt><dd>기하 2820 · 측면 조명</dd></div>
+    <div><dt>고도 · 대역</dt><dd>9,536 m · 9.5 km 대역</dd></div>
+    <div><dt>태양 (방위, 고도)</dt><dd>330°, 20°</dd></div>
+    <div><dt>정밀 inlier</dt><dd>95 / 100</dd></div>
+    <div><dt>처리 시간 (지도 제외)</dt><dd>0.84 s</dd></div>
+  </dl>
+  <p class="meta">생성 2026-10-11 · 알고리즘 <code>src/lunar_trn/</code> · 그림 <code>scripts/report/make_report_figures.py</code> · 모든 중간 산출물은 <code>localize()</code>와 같은 난수열로 재실행해 기록했다(결과 자세 일치 확인).</p>
+</header>
+
+<!-- 0 -->
+<section class="stage" id="overview">
+  <div class="stage-head"><p class="eyebrow">0 · 개요</p><h2>파이프라인 한눈에</h2></div>
+  <div class="prose">
+    <p>이 기준선은 Mars 2020 Lander Vision System(LVS)의 지도 상대 위치추정을 단일 영상용으로 옮긴 것이다. 영상을 사전 자세로 지도 좌표에 와핑한 뒤, 큰 템플릿으로 km급 오차를 먼저 줄이고(거친 단계), 작은 템플릿 100개 안팎으로 6자유도 자세를 푼다(정밀 단계). 정합 전에 영상과 지도 양쪽에서 크레이터나 키포인트 같은 기본 요소를 뽑지 않고 밝기 패치를 직접 상관하므로, 핸드오프 §2.1의 분류로는 <strong>T-I(밝기 템플릿 매칭)</strong>이다.</p>
+  </div>
+  <div class="flow">
+    <a class="step" href="#maps"><span class="num">단계 0 · 오프라인</span><span class="name">탑재 지도 생성</span>
+      <ul><li>원천 DEM을 Hapke로 정사 렌더</li><li>정밀 = 명목 GSD, 거친 = 1.5×GSD</li><li>태양 쪽 12 km까지 그림자 주사</li></ul>
+      <span class="out">→ 지도 영상 · 높이 · 그림자</span></a>
+    <a class="step" href="#coarse"><span class="num">단계 1</span><span class="name">거친 정합</span>
+      <ul><li>사전 자세로 와핑, 21×21 정규화</li><li>128 px 템플릿 ≤ 9개, FFT NCC</li><li>피크 검정 → 2점 위치 RANSAC</li></ul>
+      <span class="out">→ 위치 보정 (km → 수십 m)</span></a>
+    <a class="step" href="#fine"><span class="num">단계 2 · 2회 반복</span><span class="name">정밀 정합</span>
+      <ul><li>Harris 150개, 21×21 / 128×128 NCC</li><li>쌍이차 부화소, 피크 게이트, ≤ 100개</li><li>RANSAC → 6자유도 GN → Mahalanobis</li></ul>
+      <span class="out">→ 6자유도 자세, 랜드마크</span></a>
+    <a class="step" href="#pose"><span class="num">단계 3</span><span class="name">판정과 공분산</span>
+      <ul><li>inlier ≥ 20이면 고정(fix)</li><li>공분산 = 랜드마크 잡음 + 공통모드 바닥</li><li>모든 원신호를 health에 기록</li></ul>
+      <span class="out">→ fix / no_fix, cov 6×6</span></a>
+  </div>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>단계</th><th>입력</th><th>출력</th><th>코드</th></tr></thead>
+      <tbody>
+        <tr><td>지도 생성</td><td>DEM, 태양 방향, 지도 픽셀 크기</td><td><code>TrnMap</code>(영상, 높이, 그림자)</td><td><code>maps.py</code>, <code>render.py</code></td></tr>
+        <tr><td>거친 정합</td><td>영상, K, 사전 자세, 거친 지도</td><td>위치 보정량, 템플릿별 원신호</td><td><code>coarse.py</code>, <code>rectify.py</code>, <code>matching.py</code></td></tr>
+        <tr><td>정밀 정합</td><td>영상, 거친 단계 후 자세, 정밀 지도</td><td>6자유도 자세, 공분산, 랜드마크 배열</td><td><code>fine.py</code>, <code>pose.py</code></td></tr>
+        <tr><td>판정</td><td>inlier 수, 공분산</td><td><code>status</code>, <code>health</code></td><td><code>localize.py</code>, <code>health.py</code></td></tr>
+      </tbody>
+    </table>
+  </div>
+  <div class="prose">
+    <p>통합 지점은 순수 Python 함수 하나다. <code>localize(image, K, prior_T_world_cam, prior_cov, trn_map)</code>가 <code>status</code>, <code>T_world_cam</code>, 6×6 공분산, 랜드마크별 원값, 그리고 핸드오프 §7의 신뢰 신호 전부를 담은 <code>health</code>를 돌려준다. sim2moon, Isaac Sim, UE에는 의존하지 않는다.</p>
+  </div>
+</section>
+
+<!-- 1 -->
+<section class="stage" id="inputs">
+  <div class="stage-head"><p class="eyebrow">1 · 입력</p><h2>입력 데이터와 좌표계</h2></div>
+  <div class="prose">
+    <p>검증 데이터는 StereoLunar nadir 궤적이다. 영상은 512×512, 시야각 45°이고, 영상마다 카메라→월드 자세(달 고정 좌표계)와 깊이 지도가 있다. 같은 자세가 조명 3종으로 렌더되어 있어 조명 효과만 떼어 볼 수 있다. JPG 밝기는 영상마다 최소–최대 정규화된 8비트 값이라 복사량으로 쓰지 않는다.</p>
+  </div>
+  <figure class="fig">
+    <button class="plate" type="button"><img src="fig:f01_inputs" alt="같은 자세의 측면, 머리 위, 역광 조명 영상 세 장과 z-깊이 지도"></button>
+    <figcaption><span class="fig-no">그림 1</span>예시 기하 2820(고도 9.5 km). 파란 테두리가 이 보고서의 예시 영상(측면 조명)이다. 오른쪽은 EXR 깊이로, ReadMe의 시선 거리가 아니라 광축 방향 z-깊이임을 V1에서 확인했다. 태양 방위·고도는 시선 목표점의 국지 ENU 기준이다(<code>decisions.md</code> A7).</figcaption>
+  </figure>
+  <figure class="fig">
+    <button class="plate" type="button"><img src="fig:f02_overview" alt="남극 DEM 음영도 위의 시험 기하 450개와 예시 기하 확대도"></button>
+    <figcaption><span class="fig-no">그림 2</span>왼쪽: 원천 DEM PDS <code>LDEM_875S_5M</code>(남위 87.5° 이남, 5 m)과 nadir 시험 기하 450개. 색은 카메라 고도, 주황 별이 예시다. 오른쪽: 예시 영상의 지상 범위(약 8 km 사각형)와 그 주변 높이. 고도는 기준구 1,737.4 km 위 높이다.</figcaption>
+  </figure>
+  <div class="prose">
+    <p>좌표계 문제는 V1에서 풀었다. 달 고정 좌표계는 MOON_ME, 지도 투영은 남극 평사도법, 픽셀 중심은 <code>u = col + 0.5</code>다. 정답 자세로 DEM 광선을 쏘면 깊이 잔차 중앙값이 0.00 m, 영상면 이동 95%ile이 0.009 px이다. 아래 그림은 같은 정답 자세에서 이 레포의 Hapke 렌더러로 만든 투시 영상을 데이터셋 영상과 겹친 것이다.</p>
+  </div>
+  <figure class="fig">
+    <button class="plate" type="button"><img src="fig:f03_v1_render" alt="데이터셋 영상과 같은 자세의 자체 Hapke 렌더 비교"></button>
+    <figcaption><span class="fig-no">그림 3</span>V1 확인. 데이터셋 영상(SurRender)과 자체 렌더의 NCC는 <span class="mono">0.909</span>이다. 겹침 영상에서 빨강은 영상, 청록은 렌더이고, 정렬되면 회색으로 보인다. 렌더러가 다르므로 밝기 분포는 완전히 같지 않다. 이 차이가 뒤에서 보는 약 0.6 px 정밀도 바닥의 원인이다.</figcaption>
+  </figure>
+</section>
+
+<!-- 2 -->
+<section class="stage" id="maps">
+  <div class="stage-head"><p class="eyebrow">2 · 단계 0 (오프라인)</p><h2>탑재 지도 생성</h2></div>
+  <div class="prose">
+    <p>탑재 지도는 원천 DEM을 지정한 태양 방향에서 연직으로 내려다본 정사 렌더다. 남극 평사도법의 정규 격자에 영상, 픽셀 중심의 지형 높이, 그림자 마스크를 함께 담는다. 높이 배열이 있어야 정합된 지도 픽셀을 3차원 랜드마크로 바꿀 수 있다. 지도 픽셀의 절반 크기로 작업 격자를 만들어 음영을 계산하고 2×2 상자 평균으로 지도 픽셀을 만든다. 카메라의 다광선 적분을 근사하기 위해서다(B2).</p>
+    <p>그림자가 잘 보이도록 이 절의 그림 두 장은 다른 기하(18780, 고도 12.8 km, 측면 조명)를 쓴다. 예시 기하 2820은 그림자가 지도 면적의 0.5%뿐이다.</p>
+  </div>
+  <figure class="fig">
+    <button class="plate" type="button"><img src="fig:f04_mapgen" alt="DEM 높이, Hapke 음영, 그림자 마스크, 최종 지도의 네 단계"></button>
+    <figcaption><span class="fig-no">그림 4</span>지도 생성 네 단계(지도 픽셀 20.2 m). ① 지도 격자로 재표본한 DEM. ② 평사도법 법선의 닫힌 식으로 구한 Hapke 음영(w = 0.25, b = −0.25, B₀ = 1.0, h = 0.06). ③ 그림자: 파랑은 다른 지형이 드리운 투영 그림자, 회색은 태양을 등진 면(자기 그림자)이다. ④ ③을 0으로 둔 최종 지도. 이 장면은 지도의 43%가 그림자다.</figcaption>
+  </figure>
+  <div class="prose">
+    <p>투영 그림자는 광선추적 대신 정확한 2.5D 지평선 주사로 구한다. 접평면 좌표의 높이를 태양 방위가 +열 방향이 되도록 회전한 뒤, 각 점보다 태양 쪽에 있는 점들의 <code>Z − u·tan(el)</code> 최댓값(suffix max)이 그 점보다 높으면 그림자로 판정한다. 계산량은 O(N)이고 광선추적과 97% 이상 일치한다(B3). 그림자를 드리우는 지형이 지도 밖에 있을 수 있으므로 DEM 창을 태양 쪽으로 12 km 늘린다(B4).</p>
+  </div>
+  <figure class="fig">
+    <button class="plate" type="button"><img src="fig:f05_shadow_reach" alt="태양 쪽으로 확장한 DEM 창과 확장 유무에 따른 그림자 비교"></button>
+    <figcaption><span class="fig-no">그림 5</span>왼쪽: 그림자 주사에 쓰는 DEM 창. 주황 사각형이 지도 범위이고 노란 화살표가 태양 쪽 12 km 확장이다. 가운데·오른쪽: 그림자 안쪽의 5.4 km 타일(파란 사각형)을 그 타일의 DEM만으로 주사하면 투영 그림자가 30%로 나오고, 확장 창으로 주사하면 69%다. 차폐물인 분화구 벽이 타일 밖에 있기 때문이다. 12 km는 태양 고도 15°에서 3.2 km 높이 차폐물까지 덮는다. 그보다 깊은 분화구의 그림자는 빠진다.</figcaption>
+  </figure>
+  <figure class="fig">
+    <button class="plate" type="button"><img src="fig:f06_map_vs_image" alt="조명 세 종류에 대해 정답 자세로 와핑한 영상과 렌더 지도 비교"></button>
+    <figcaption><span class="fig-no">그림 6</span>위: 데이터셋 영상을 정답 자세로 지도 격자에 와핑한 것. 아래: 같은 태양으로 렌더한 이 레포의 정밀 지도(예시 기하, 15.4 m/px). 조명별 NCC는 측면 <span class="mono">0.86</span>, 머리 위 <span class="mono">0.76</span>, 역광 <span class="mono">0.83</span>이다. 두 렌더러의 겉모습 차이가 "지도 ≠ 영상" 오차원이다.</figcaption>
+  </figure>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>항목</th><th>값</th><th>근거</th></tr></thead>
+      <tbody>
+        <tr><td>반사 모델</td><td>Hapke IMSA, 단일 로브 HG, 거칠기 보정 없음</td><td><span class="src dec">B1</span> V1에서 Lunar-Lambert보다 잘 맞음(NCC 0.96 대 0.92)</td></tr>
+        <tr><td>정밀 지도 픽셀</td><td>명목 대역 고도의 카메라 GSD × 1.0 (예시 15.4 m, 1998×1998 px)</td><td><span class="src lvs">LVS</span> 6 m ≈ 운용 고도 중간의 LCAM GSD · <span class="src dec">B5</span></td></tr>
+        <tr><td>거친 지도 픽셀</td><td>GSD × 1.5 (예시 23.1 m, 1332×1332 px)</td><td><span class="src lvs">LVS</span> 12 m ≈ 거친 시작 고도 GSD의 1.46배 · <span class="src dec">B5</span></td></tr>
+        <tr><td>지도 반폭</td><td>시야 반폭 + 사전 반경 + (사전 반경 + 300 m) + 거친 템플릿 반폭 + 500 m</td><td><span class="src dec">B6</span> 어떤 사전 표본에서도 탐색 창이 지도 안에 든다</td></tr>
+        <tr><td>그림자 확장</td><td>태양 쪽 12 km</td><td><span class="src dec">B4</span></td></tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<!-- 3 -->
+<section class="stage" id="prior">
+  <div class="stage-head"><p class="eyebrow">3 · 출발점</p><h2>사전 자세</h2></div>
+  <div class="prose">
+    <p>V2 규약에 따라 정답 위치에 수평 반경 3 km 원판 안 균등 오차, 수직 ±120 m 균등 오차를 더해 사전 위치를 만든다. 자세는 정답을 쓰고 σ 0.01°의 사전으로 넣는다. 위치추정기에는 반경을 3σ로 보고 σ<sub>h</sub> = 1,000 m를 준다(C4). 예시 사전은 동쪽 +1,894 m, 북쪽 −1,428 m, 위 +66 m 어긋나 있다. 수평 오차는 2,372 m다.</p>
+  </div>
+  <figure class="fig">
+    <button class="plate" type="button"><img src="fig:f07_prior_maps" alt="거친 지도 위의 정답 및 사전 지상 범위와 거친·정밀 지도 해상도 비교"></button>
+    <figcaption><span class="fig-no">그림 7</span>왼쪽: 거친 지도 전체(30.8 km). 청록 실선이 정답 자세의 지상 범위, 주황 점선이 사전 자세의 지상 범위다. 흰 점선 원은 3 km 사전 반경, 노란 일점쇄선은 거친 탐색이 닿는 범위다. 가운데·오른쪽: 같은 1.6 km 구역의 거친 지도(23.1 m/px)와 정밀 지도(15.4 m/px).</figcaption>
+  </figure>
+</section>
+
+<!-- 4 -->
+<section class="stage" id="coarse">
+  <div class="stage-head"><p class="eyebrow">4 · 단계 1</p><h2>거친 정합: km 오차를 수십 m로</h2></div>
+  <div class="prose">
+    <p>거친 단계의 목표는 정밀 단계의 128×128 탐색 창 안으로 들어가는 것이다. 자세는 사전을 그대로 믿고 위치 3자유도만 고친다. LVS는 영상 3장에서 큰 패치 5개씩을 썼고, 단일 영상인 이 구현은 최대 9개를 쓴다.</p>
+  </div>
+
+  <h3 class="prose">4.1 사전 자세로 와핑</h3>
+  <div class="prose">
+    <p>거친 지도의 각 픽셀을 지도 DEM 높이로 3차원 점으로 바꾸고, 사전 자세로 영상에 투영해 쌍선형 표본을 얻는다(<code>rectify_to_map</code>). 지도 픽셀이 영상 GSD의 1.5배보다 크면 2×2 부격자를 평균해 계단 현상을 줄인다. 범위는 사전 자세의 지상 범위를 감싸는 상자(예시 454×454 px)다.</p>
+  </div>
+  <figure class="fig">
+    <button class="plate" type="button"><img src="fig:f08_coarse_rectify" alt="사전 자세로 와핑한 영상, 같은 범위의 거친 지도, 사전과 정답에서의 겹침"></button>
+    <figcaption><span class="fig-no">그림 8</span>사전 자세로 와핑한 영상과 같은 상자의 지도. 세 번째 그림에서 빨강(영상)과 청록(지도)이 크게 어긋나 같은 지형이 두 번 보인다. 2.4 km 오차는 거친 지도에서 약 100 px다. 네 번째는 비교용으로 정답 자세로 와핑한 결과이며 회색으로 겹친다.</figcaption>
+  </figure>
+
+  <h3 class="prose">4.2 21×21 국소 정규화</h3>
+  <div class="prose">
+    <p>영상과 지도 모두에서 21×21 창의 국소 평균을 빼고 국소 표준편차로 나눈다(LVS 원문). 렌더러와 노출이 달라 생기는 밝기·대비 차이를 지우고 지형의 모양만 남긴다. NaN(영상 밖)은 결측으로 다루고, 창 안 유효 화소가 절반 미만이면 0으로 둔다.</p>
+  </div>
+  <figure class="fig">
+    <button class="plate" type="button"><img src="fig:f09_normalize" alt="정규화 전후의 와핑 영상과 지도 확대"></button>
+    <figcaption><span class="fig-no">그림 9</span>상자 중앙 160×160 px 확대. 노란 사각형이 21×21 창의 크기다. 정규화 후에는 넓은 경사면의 밝기 기울기가 사라지고 작은 분화구 같은 국소 구조가 남는다. 영상과 지도가 다른 렌더러라도 정규화 후 모습은 훨씬 비슷하다.</figcaption>
+  </figure>
+
+  <h3 class="prose">4.3 템플릿 선택</h3>
+  <div class="prose">
+    <p>와핑 영상 위에서 128×128 창을 16 px 간격으로 훑으며, NaN이 없는 창마다 Sobel 기울기 에너지의 합을 점수로 매긴다(적분 영상 사용, C2). 점수순으로 고르되 이미 고른 창과 0.75 템플릿(96 px) 이상 떨어져야 한다. 예시에서는 이 조건을 만족하는 창이 7개였다.</p>
+  </div>
+  <figure class="fig">
+    <button class="plate" type="button"><img src="fig:f10_templates" alt="Sobel 기울기 에너지와 선택된 128 px 템플릿 7개"></button>
+    <figcaption><span class="fig-no">그림 10</span>왼쪽: 기울기 에너지(로그). 분화구 가장자리와 작은 충돌구가 밝다. 오른쪽: 선택된 템플릿과 점수 순위. 청록은 이후 기하 검정까지 통과한 템플릿이다(예시에서는 7개 전부).</figcaption>
+  </figure>
+
+  <h3 class="prose">4.4 FFT 상관</h3>
+  <div class="prose">
+    <p>탐색 반경은 3σ<sub>h</sub> + 300 m = 3.3 km, 거친 지도에서 143 px다. LVS의 FFT 지도 크기 1024에 맞춰 반경 상한은 (1024 − 128)/2 = 448 px다. 각 정규화 템플릿을 사전 예측 위치 주변 414×414 px 정규화 지도 창에 상관한다. <code>cv2.matchTemplate</code>(TM_CCOEFF_NORMED)는 큰 템플릿에서 DFT로 전환하므로 LVS의 FFT 상관과 같은 연산이다. 분산이 없는 곳(그림자로 평평한 지도)의 NCC는 0으로 둔다.</p>
+  </div>
+  <figure class="fig">
+    <button class="plate" type="button"><img src="fig:f12_coarse_detail" alt="최고 피크 템플릿, 지도 탐색 창의 예측·정합 위치, NCC 곡면 3D"></button>
+    <figcaption><span class="fig-no">그림 11</span>피크가 가장 높은 템플릿 #7. 지도 탐색 창의 주황 점선이 사전이 예측한 위치, 청록 실선이 NCC가 찾은 위치다. 화살표가 사전 오차를 나타낸다. 오른쪽 NCC 곡면은 높이 <span class="mono">0.82</span>의 바늘 같은 피크 하나와 0 근처의 바닥으로 이루어진다(PSR 29.3, 3×3 블록 최댓값으로 축소해 그림).</figcaption>
+  </figure>
+  <figure class="fig">
+    <button class="plate" type="button"><img src="fig:f11_coarse_ncc" alt="템플릿 7개의 NCC 곡면, 사전 예측 위치와 피크, 정답 위치"></button>
+    <figcaption><span class="fig-no">그림 12</span>템플릿 7개의 NCC 곡면(287×287). 흰 +는 사전 예측(오프셋 0), 노란 ×는 피크, 청록 원은 정답 위치다. 일곱 개 모두 피크가 정답과 겹친다. 오른쪽 아래 삽입도는 피크 주변 ±14 px 확대로, 피크 폭(FWHM)이 5.6–8.8 px임을 보여 준다.</figcaption>
+  </figure>
+
+  <h3 class="prose">4.5 피크 검정과 기하 RANSAC</h3>
+  <div class="prose">
+    <p>피크마다 네 검정을 차례로 적용한다. 곡면 가장자리 피크, 위로 볼록하지 않거나 부화소 오프셋이 1 px를 넘는 피크(LVS 원문), 높이 0.15 미만, FWHM 12 px 초과(C7, 보정 표본에서 정답의 98.8% 통과)를 버린다. 남은 템플릿은 랜드마크 하나가 된다. 영상 좌표는 템플릿 중심을 사전 자세로 투영한 값이고, 3차원 점은 정합된 지도 위치다.</p>
+    <p>LVS의 기하 이상치 검정 |a − m| &lt; T는 자세를 고정한 위치 RANSAC으로 구현했다. 랜드마크 두 개의 광선 제약에서 카메라 중심을 닫힌 꼴로 풀고, 재투영 오차 3 거친 px(예시 4.15 영상 px) 안의 개수로 가설을 고른다. inlier가 2개 이상이면 거친 단계 성공이다(C5, C6).</p>
+  </div>
+  <div class="eq">광선 제약:  (I − dᵢdᵢᵀ)(Xᵢ − c) = 0,   dᵢ = R·K⁻¹[uᵢ, vᵢ, 1]ᵀ / ‖·‖
+최소제곱:  c = (Σ (I − dᵢdᵢᵀ))⁻¹ Σ (I − dᵢdᵢᵀ) Xᵢ</div>
+  <figure class="fig">
+    <button class="plate" type="button"><img src="fig:f13_coarse_ransac" alt="템플릿별 측정 오프셋과 정답 오프셋, 3 px 기하 임계 원"></button>
+    <figcaption><span class="fig-no">그림 13</span>템플릿별 오프셋(미터, 지도 x·y 축). 일곱 개가 (−1.4 km, +1.95 km) 근처에 모여 있고, 검은 +로 표시한 정답 오프셋과 수십 m 안에서 맞는다. 정답 오프셋이 템플릿마다 다른 것은 지형 기복(이 구역 약 1.1 km)과 수직 사전 오차 때문이다. 오른쪽 점선 원이 3 거친 px 임계다.</figcaption>
+  </figure>
+  <div id="coarse-table"></div>
+  <div class="note"><strong>거친 단계 결과.</strong> 템플릿 7개가 모두 피크 검정과 기하 검정을 통과했다. 위치 보정량은 동·북·위로 (−1,902, +1,417, −56) m이고, 남은 수평 오차는 <strong>13.2 m</strong>(거친 지도 0.57 px)다. 소요 시간은 0.15 s다.</div>
+</section>
+
+<!-- 5 -->
+<section class="stage" id="fine">
+  <div class="stage-head"><p class="eyebrow">5 · 단계 2</p><h2>정밀 정합: 랜드마크 100개로 6자유도 자세</h2></div>
+  <div class="prose">
+    <p>정밀 단계는 LVS 원문의 매개변수를 거의 그대로 쓴다. 특징 150개, 21×21 템플릿, 128×128 탐색, 3×3 쌍이차 부화소, 추정기 입력 100개다. 단일 영상이라 LVS의 연속 영상 갱신 대신 개선된 자세로 한 번 더 와핑해 2회 반복한다(D9).</p>
+  </div>
+
+  <h3 class="prose">5.1 Harris 특징 선택</h3>
+  <div class="prose">
+    <p>원본 영상에 5×5 Harris 응답을 계산하고, 영상을 32×32 px 칸으로 나눠 칸마다 응답이 가장 큰 점 하나를 고른 뒤 응답순으로 150개를 남긴다. LVS는 1024 px 영상에서 64×64 칸을 썼고, 512 px 영상이라 칸을 절반으로 줄였다(D1). 칸 나누기는 특징이 영상 전체에 퍼지게 해 자세 추정의 기하 조건을 좋게 한다.</p>
+  </div>
+  <figure class="fig">
+    <button class="plate" type="button"><img src="fig:f14_harris" alt="Harris 응답과 32 px 칸 격자, 선택된 특징 150개"></button>
+    <figcaption><span class="fig-no">그림 14</span>왼쪽: Harris 응답(로그)과 32×32 px 칸. 오른쪽: 선택된 특징 150개. 진한 색일수록 응답 순위가 높다. 템플릿이 영상 안에 들어가도록 가장자리 13 px는 제외한다.</figcaption>
+  </figure>
+
+  <h3 class="prose">5.2 거친 단계 후 자세로 다시 와핑</h3>
+  <div class="prose">
+    <p>거친 단계가 고친 자세로 영상을 정밀 지도 격자에 와핑한다. 범위는 지상 범위에 템플릿 크기(21 px)만큼 여백을 더한 상자다. 거친 후 오차 13 m는 정밀 지도에서 0.9 px이므로, ±64 px 탐색 창은 충분한 여유가 있다.</p>
+  </div>
+  <figure class="fig">
+    <button class="plate" type="button"><img src="fig:f15_fine_align" alt="정밀 지도와 사전, 거친 후, 최종 자세의 겹침"></button>
+    <figcaption><span class="fig-no">그림 15</span>정밀 지도 중앙 3.4 km 구역 위에 세 자세로 와핑한 영상을 겹쳤다. 사전 자세에서는 색이 완전히 갈라지고, 거친 후(13.2 m)와 최종(9.6 m)에서는 회색으로 겹친다. 남은 붉은·푸른 기는 위치 오차가 아니라 두 렌더러의 밝기 차이다.</figcaption>
+  </figure>
+
+  <h3 class="prose">5.3 랜드마크 하나를 따라가기</h3>
+  <div class="prose">
+    <p>특징 픽셀의 광선을 지도 지형과 고정점 반복으로 교차시켜 예측 지도 위치를 구한다(<code>predicted_map_location</code>). 그 위치를 중심으로 와핑·정규화된 영상에서 21×21 템플릿을 자르고, 정규화 지도에서 128×128 탐색 영역을 잘라 상관한다. 피크 주변 3×3 값에 쌍이차 곡면을 맞춰 부화소 위치와 곡률을 얻는다.</p>
+  </div>
+  <div class="eq">z(x, y) = a + b·x + c·y + d·x² + e·xy + f·y²     (3×3 최소제곱)
+H = [[2d, e], [e, 2f]],   부화소 오프셋 = −H⁻¹[b, c]ᵀ
+FWHM = 2·√(z_max / |λ|)   (λ: H의 고윳값, 두 주방향 각각)</div>
+  <figure class="fig">
+    <button class="plate" type="button"><img src="fig:f16_fine_landmark" alt="특징 주변 영상, 21×21 템플릿, 128×128 탐색 영역, NCC 곡면, 3×3 쌍이차 맞춤"></button>
+    <figcaption><span class="fig-no">그림 16</span>랜드마크 #99. 왼쪽부터 원본 영상의 특징 주변(노란 사각형이 템플릿 크기, 영상 px로 0.93배), 정규화 템플릿, 지도 탐색 영역(주황 점선 = 예측, 청록 = 정합), 108×108 NCC 곡면, 피크 3×3 값과 맞춘 쌍이차 곡면의 등고선. 피크 높이 <span class="mono">0.964</span>, FWHM <span class="mono">8.7 / 5.0 px</span>(평평한 / 날카로운 방향), 부화소 오프셋 <span class="mono">(−0.55, +0.12) px</span>.</figcaption>
+  </figure>
+
+  <h3 class="prose">5.4 피크 게이트</h3>
+  <div class="prose">
+    <p>거친 단계와 같은 순서로 가장자리, 모양(볼록성·부화소 1 px), 높이, 폭을 검사한다. LVS는 높이·폭 임계 수치를 공개하지 않았다. 이 레포는 보정 표본(기하 순번 % 4 == 1)에서 게이트를 끄고 실행한 뒤, 랜드마크마다 정답 자세로 참 지도 위치를 구해 1.5 px 이내면 정답으로 표시했다. 모든 대역에서 정답의 98.5% 이상을 남기는 가장 엄격한 값이 <strong>높이 ≥ 0.60, FWHM ≤ 12 px</strong>다(D4).</p>
+    <p>조명이 일치하는 예시 실행에서는 150개 중 149개가 통과해 거절 사례가 거의 없다. 그래서 아래 두 그림은 같은 영상을 태양 방위가 45° 돌아간 지도와 맞춘 실행(태양 방향 차 42°, 결과는 정답 고정)에서 가져왔다.</p>
+  </div>
+  <figure class="fig">
+    <button class="plate" type="button"><img src="fig:f17_fine_gallery" alt="통과와 거절 사유별 랜드마크의 템플릿과 NCC 곡면"></button>
+    <figcaption><span class="fig-no">그림 17</span>위: 21×21 정규화 템플릿, 아래: NCC 곡면과 피크(×). 통과한 피크는 둥글고 높다. "높이 낮음"은 정답 근처에 피크가 있어도 0.60에 못 미친 경우, "폭 넓음"은 능선처럼 한 방향으로 길게 늘어진 피크(FWHM 14.8 px), "모양"은 3×3 맞춤의 부화소 오프셋이 1 px를 넘거나 볼록하지 않은 경우다.</figcaption>
+  </figure>
+  <figure class="fig">
+    <button class="plate" type="button"><img src="fig:f18_peak_gate" alt="피크 높이와 FWHM 산점도, 보정 표본의 정답·오답 분포"></button>
+    <figcaption><span class="fig-no">그림 18</span>왼쪽: 지도 태양 +45° 실행의 특징 150개. 점선이 게이트이고 옅은 청록 영역이 통과 구역이다. 가운데·오른쪽: 보정 표본 랜드마크 99,000개(정답 92.2%)의 분포. 오답 피크 높이는 0.4 근처, 정답은 0.9 근처에 몰린다. 채택한 게이트는 정답의 <span class="mono">98.9%</span>를 남기고 오답은 <span class="mono">7.8%</span>만 통과시킨다(정밀도 99.3%). 0에 몰린 오답은 분산이 없는 그림자 지도 구역이다.</figcaption>
+  </figure>
+
+  <h3 class="prose">5.5 랜드마크 깔때기</h3>
+  <div class="prose"><p>피크 게이트를 통과한 정합 가운데 피크가 높은 순으로 최대 100개가 추정기에 들어간다(LVS 2022의 100개 상한, D5). 두 실행의 최종 반복에서 각 단계를 통과한 수는 다음과 같다.</p></div>
+  <div class="funnels" id="funnels"></div>
+
+  <h3 class="prose">5.6 위치 RANSAC</h3>
+  <div class="prose">
+    <p>거친 단계와 같은 2점 위치 해법을 쓴다. 자세는 고정하고, 쌍을 최대 600개 뽑아 가설마다 재투영 오차가 max(2 지도 px, 1.5 영상 px) 안인 랜드마크를 센다(예시 1.86 px, D6). 거친 단계를 통과한 뒤라 정합 오프셋은 모두 거친 단계의 잔여 오차 근처에 모인다.</p>
+  </div>
+  <figure class="fig">
+    <button class="plate" type="button"><img src="fig:f19_fine_offsets" alt="와핑 영상 위의 랜드마크 오프셋 화살표와 오프셋 산점도"></button>
+    <figcaption><span class="fig-no">그림 19</span>정밀 1회차의 정합 오프셋(예측 위치 대비, 40배 확대). 오른쪽 산점도에서 오프셋이 (+0.5, 0) px 근처에 모인다. 거친 단계 후 오차 13 m ≈ 0.9 px와 같은 크기다. 예시에서는 RANSAC 기하 이상치가 없었고, 보라색 삼각형 7개는 다음 단계의 Mahalanobis 게이트가 버린 랜드마크다.</figcaption>
+  </figure>
+
+  <h3 class="prose">5.7 6자유도 Gauss-Newton과 자세 사전</h3>
+  <div class="prose">
+    <p>RANSAC inlier로 위치와 자세 6자유도를 재투영 오차에 대해 Gauss-Newton으로 푼다. Huber 핵(2σ)을 쓰고, 자세 섭동은 월드 좌표의 소회전 <code>R = exp([w]×)·R₀</code>로 둔다. 사전 자세를 σ 0.01°의 의사 측정으로 넣어 MAP 추정이 된다. 근연직·좁은 시야·평탄한 지형에서는 카메라 기울기와 수평 위치가 거의 같은 영상 변화를 만들기 때문이다. 자세를 자유롭게 두면 수십 m 오차가 생긴다(<code>tests/test_pose.py</code>). 실제 시스템에서는 IMU가 이 사전을 준다.</p>
+  </div>
+
+  <h3 class="prose">5.8 Mahalanobis 게이트</h3>
+  <div class="prose">
+    <p>첫 정제 후 랜드마크마다 d² = ‖r/σ‖²를 계산한다. σ는 가정한 정합 잡음 0.5 지도 px를 영상 px로 바꾼 값(예시 0.46 px)이다. 임계는 LVS의 적응형 γ = q3 + 1.5·(q3 − q1)이고, 넘는 랜드마크를 빼고 다시 정제한다(D8). γ가 분포의 사분위로 정해지므로 깨끗한 실행에서도 꼬리 몇 개는 잘린다.</p>
+  </div>
+  <figure class="fig">
+    <button class="plate" type="button"><img src="fig:f20_mahalanobis" alt="두 반복의 d² 히스토그램과 적응형 임계 γ"></button>
+    <figcaption><span class="fig-no">그림 20</span>정밀 1·2회차의 d² 분포(로그 축). 1회차 γ = <span class="mono">0.148</span>로 7개, 2회차 γ = <span class="mono">0.156</span>로 5개를 버렸다. d²가 1보다 훨씬 작은 것은 실제 잔차(RMS 0.09 px)가 가정 잡음 0.46 px보다 작기 때문이다.</figcaption>
+  </figure>
+
+  <h3 class="prose">5.9 두 번째 반복과 최종 잔차</h3>
+  <div class="prose">
+    <p>2회차는 1회차 자세로 영상을 다시 와핑해 같은 과정을 반복한다. 2회차가 실패하거나 inlier가 1회차의 80% 아래로 떨어지면 1회차 결과를 지킨다. 예시에서 inlier는 93개에서 95개로 늘었다.</p>
+  </div>
+  <figure class="fig">
+    <button class="plate" type="button"><img src="fig:f21_residuals" alt="최종 inlier 재투영 잔차 화살표와 잔차 산점도"></button>
+    <figcaption><span class="fig-no">그림 21</span>최종 inlier 95개의 재투영 잔차(400배 확대). 잔차 RMS <span class="mono">0.088 px</span>, 사후 단위분산 σ₀ <span class="mono">0.135</span>다. 잔차 방향에 공간적 패턴이 없다. 이 작은 잔차와 달리 해 전체는 약 0.6 px 어긋나 있는데, 다음 절에서 다룬다.</figcaption>
+  </figure>
+</section>
+
+<!-- 6 -->
+<section class="stage" id="pose">
+  <div class="stage-head"><p class="eyebrow">6 · 단계 3</p><h2>판정과 공분산</h2></div>
+  <div class="prose">
+    <p>정밀 단계가 성공하고 inlier가 20개 이상이면 고정(fix)이다. Mars 2020이 위치 갱신에 쓴 값이다(D10). 공분산은 정규방정식 역행렬에 max(σ₀, 1)²을 곱한 랜드마크 잡음 항에, 보정 표본에서 정한 공통모드 바닥(수평 축마다 0.47 정밀 px, 수직 0.085 px)을 더한다(D7b). 채점에서는 수평 오차가 정밀 지도 3 px(예시 46.2 m) 이하면 정답, 넘으면 오고정이다.</p>
+  </div>
+  <figure class="fig">
+    <button class="plate" type="button"><img src="fig:f22_pose" alt="사전, 거친, 정밀 위치 추정의 세 축척 확대와 공분산 타원"></button>
+    <figcaption><span class="fig-no">그림 22</span>정답 기준 ENU 수평 오차. 왼쪽: km 축척, 사전(회색) → 거친(주황). 가운데: ±22 m, 거친 → 정밀 1회차(파랑) → 2회차(청록). 오른쪽: 최종 추정의 1σ(실선)·2σ(점선) 타원과 정밀 지도 픽셀 격자. 랜드마크 잡음만 쓴 타원(보라, σ ≈ 1.9 m)으로는 정답이 5σ 밖이고, 공통모드 바닥을 더한 타원(청록, σ ≈ 7.5 m)으로는 1.3σ다.</figcaption>
+  </figure>
+  <div class="note"><strong>왜 공통모드 바닥이 필요한가.</strong> 재투영 RMS는 0.09 px인데 해 전체는 0.62 px(9.6 m) 어긋나 있다. 같은 렌더러로 만든 합성 장면에서는 이 오차가 0.01 px이므로 기하가 아니라 겉모습 차이에서 온다. 지도 렌더러와 데이터셋 렌더러의 차이가 모든 랜드마크를 같은 방향으로 미는 오차라서, 랜드마크 수를 늘려도 줄지 않는다. 평가 표본에서 바닥이 없으면 오차/σ 중앙값이 3.6배로 과신했고, 바닥을 넣으면 2σ 안이 99.8%다.</div>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>결과</th><th class="num">값</th><th>비고</th></tr></thead>
+      <tbody>
+        <tr><td>판정</td><td class="num ok">fix · 정답</td><td>inlier 95 ≥ 20, 오차 ≤ 46.2 m</td></tr>
+        <tr><td>수평 오차 (E, N)</td><td class="num">9.62 m (+0.39, −9.61)</td><td>정밀 지도 0.62 px</td></tr>
+        <tr><td>수직 오차</td><td class="num">+0.68 m</td><td></td></tr>
+        <tr><td>자세 오차</td><td class="num">0.0008°</td><td>자세 사전 σ 0.01°</td></tr>
+        <tr><td>1σ (랜드마크 잡음만)</td><td class="num">1.90 / 1.89 / 2.39 m</td><td>E / N / U, <code>health.cov_landmark_only</code></td></tr>
+        <tr><td>1σ (공통모드 바닥 포함)</td><td class="num">7.48 / 7.48 / 2.73 m</td><td>E / N / U, 반환 공분산</td></tr>
+        <tr><td>inlier 비 · 재투영 RMS</td><td class="num">0.95 · 0.088 px</td><td>σ₀ 0.135</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <h3 class="prose">원신호 (health)</h3>
+  <div class="prose"><p>본 연구는 판정이 아니라 원값으로 고도대별 ROC를 그린다. 그래서 실행마다 아래 값들을 판정과 함께 <code>runs.jsonl</code>에 남긴다. 예시 실행의 값이다.</p></div>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>분류</th><th>신호</th><th class="num">예시 값</th></tr></thead>
+      <tbody>
+        <tr><td>영상·장면</td><td>히스토그램 엔트로피</td><td class="num">7.15 bit</td></tr>
+        <tr><td></td><td>기울기 공분산 λ<sub>min</sub> · tr(Σ⁻¹)</td><td class="num">3.3×10⁻⁴ · 4,175</td></tr>
+        <tr><td></td><td>어두운 화소 비율 (&lt; 0.02)</td><td class="num">0.11%</td></tr>
+        <tr><td></td><td>카메라 GSD ÷ 지도 GSD</td><td class="num">1.08</td></tr>
+        <tr><td>거친 단계</td><td>템플릿별 피크 · FWHM · PSR · 부피크 비 · 위상상관 응답</td><td class="num">7개 기록</td></tr>
+        <tr><td></td><td>기하 inlier / 이상치</td><td class="num">7 / 0</td></tr>
+        <tr><td>정밀 단계</td><td>특징 · 정합 · 입력 · inlier</td><td class="num">150 · 149 · 100 · 95</td></tr>
+        <tr><td></td><td>거절 사유별 수 (폭 · Mahalanobis)</td><td class="num">1 · 5</td></tr>
+        <tr><td></td><td>사용 랜드마크 피크 높이 중앙값</td><td class="num">0.915</td></tr>
+        <tr><td>자세</td><td>RANSAC 임계 · γ · 가정 σ</td><td class="num">1.86 · 0.156 · 0.46 px</td></tr>
+        <tr><td></td><td>사전 대비 보정량 (동, 북, 위)</td><td class="num">(−1,894, +1,418, −65) m</td></tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<!-- 7 -->
+<section class="stage" id="validation">
+  <div class="stage-head"><p class="eyebrow">7 · 검증</p><h2>검증 결과: V2와 V3</h2></div>
+  <div class="prose">
+    <p>위 과정을 평가 표본 337개 기하(보정 표본 113개와 겹치지 않음)에 대해 실행했다. 실행 1회는 (기하, 지도 조명, 영상 조명, 사전 표본)이고 전체 18,198회다. 조명이 일치하는 6,066회가 V2, 나머지가 V3다. 임계값은 모두 평가 데이터를 보기 전에 보정 표본에서 정했다.</p>
+  </div>
+
+  <h3 class="prose">7.1 V2: 고도 대역별 가용성과 정확도</h3>
+  <div class="charts">
+    <div class="chart" id="c-avail"></div>
+    <div class="chart" id="c-err"></div>
+  </div>
+  <div id="band-table"></div>
+  <div class="note"><strong>V2 판정: 합격.</strong> 거친 단계 오차 99%ile은 대역별 39–84 m로 기준(≲ 200 m, LVS 158 m)을 넉넉히 만족한다. 정답 고정의 정밀 오차 95%ile은 모든 대역에서 0.81–0.84 지도 px로 고도에 따라 거의 변하지 않는다. 지도 픽셀을 카메라 GSD에 맞췄기 때문이다. 3.5 km 대역의 가용성 76%가 가장 낮다(8절).</div>
+
+  <h3 class="prose">7.2 V2c: 무결성</h3>
+  <div class="prose">
+    <p>오고정은 조명 일치 6,066회, 조명 불일치를 포함한 18,198회에서 모두 <strong>0건</strong>이다. 단측 95% Clopper–Pearson 상한은 각각 0.05%, 0.02%다. 대역마다 수백 회라 대역별 상한은 0.39–1.38%까지만 말할 수 있다. 거친 단계는 성공했지만 inlier 11–14개로 게이트에서 거부된 12회는 실제로는 오차 0.5–1.0 px로 맞았다. inlier 20 게이트가 가용성을 잃게 한 사례이고, 원신호가 남아 있어 ROC로 게이트를 다시 정할 수 있다.</p>
+  </div>
+
+  <h3 class="prose">7.3 V3: 지도와 영상의 조명 차이</h3>
+  <div class="prose"><p>데이터셋의 세 조명은 모두 태양 고도 15–20°이고 방위만 70–150° 다르다. 지도 조명 × 영상 조명의 가용성(모든 대역)은 다음과 같다. 괄호는 두 태양 방향 사이 각이다.</p></div>
+  <div class="table-wrap" style="max-width: 640px;">
+    <table class="matrix">
+      <thead><tr><th>지도 \ 영상</th><th class="num">측면 (330°, 20°)</th><th class="num">머리 위 (250°, 20°)</th><th class="num">역광 (180°, 15°)</th></tr></thead>
+      <tbody id="matrix-body"></tbody>
+    </table>
+  </div>
+  <div class="prose"><p>조명 차이가 커질 때 무엇이 무너지는지 보려고, 예시 영상과 같은 사전으로 지도의 태양 방위만 Δ만큼 돌려 다시 실행했다.</p></div>
+  <figure class="fig">
+    <button class="plate" type="button"><img src="fig:f23_v3_example" alt="태양 방위 오프셋별 지도와 같은 템플릿의 NCC 곡면"></button>
+    <figcaption><span class="fig-no">그림 23</span>위: 지도 태양 방위를 0, 30, 45, 60, 90° 돌려 렌더한 정밀 지도(괄호는 태양 방향 사이 각)와 실행 결과. 아래: 첫 열의 21×21 템플릿을 정답 위치 주변에서 각 지도와 상관한 곡면(청록 원 = 정답). 피크가 0.78 → 0.65 → 0.52 → 0.41 → 0.37로 낮아지고, 90°에서는 엉뚱한 곳으로 간다. 정밀 정합 통과 수는 149 → 141 → 82 → 16 → 1이다. 60°와 90°에서도 거친 단계는 7개 중 5개로 성공했고, 정밀 단계의 inlier 20 게이트가 고정을 거부했다.</figcaption>
+  </figure>
+  <div class="charts">
+    <div class="chart" id="c-sweep"></div>
+    <div class="chart" id="c-sweep-err"></div>
+  </div>
+  <div class="note"><strong>V3 요약.</strong> 태양 방향 차 28°까지는 가용성 변화가 거의 없고, 42°에서 12.5 km 이상은 0.99 이상을 유지한다. 낭떠러지는 42–56° 사이에 있다. 정확도는 가용성보다 먼저 나빠진다. 스윕 7,140회에서도 오고정은 0건이다. 이 시험은 지도와 영상이 같은 DEM이고 방위만 바꾼 조건이라 실제 지도에서는 여유가 줄어든다.</div>
+</section>
+
+<!-- 8 -->
+<section class="stage" id="failures">
+  <div class="stage-head"><p class="eyebrow">8 · 한계</p><h2>실패 양상과 한계</h2></div>
+
+  <h3 class="prose">8.1 저고도: 사전 오차에 비례하는 시차</h3>
+  <div class="prose">
+    <p>와핑은 지도 DEM 높이를 쓰지만 카메라 위치가 틀리면 높이가 다른 점들이 서로 다른 양만큼 어긋난다. 어긋남은 대략 (사전 수평 오차) × (높이 차) ÷ (고도)에 비례한다. 3.5 km에서는 같은 사전 오차가 9.5 km보다 세 배 가까이 큰 일그러짐을 만들고, 남극의 km급 기복이 이를 키운다. 템플릿 안에서 일그러짐이 피크 폭(약 6 px)을 넘으면 상관 피크가 사라진다.</p>
+  </div>
+  <figure class="fig">
+    <button class="plate" type="button"><img src="fig:f24_parallax" alt="세 조건에서 템플릿 창 안의 와핑 오차 지도와 최고 거친 NCC 곡면"></button>
+    <figcaption><span class="fig-no">그림 24</span>위: 사전 자세로 와핑할 때 128 px 템플릿 창 안에 남는 와핑 오차(창 평균 이동을 뺀 값, 거친 px). 9.5 km·사전 2.4 km는 95%ile 2.4 px, 3.5 km(기하 12420)·사전 0.7 km는 1.6 px, 같은 기하·사전 2.7 km는 9.1 px이고 가장자리가 포화한다. 아래: 각 조건에서 가장 높은 거친 NCC 곡면. 마지막 조건은 피크 0.15로 템플릿 4개가 모두 피크 검정에서 떨어져 고정하지 못했다. 같은 영상이 사전 0.7 km에서는 오차 3.6 m로 고정했다.</figcaption>
+  </figure>
+  <div class="charts">
+    <div class="chart" id="c-prior"></div>
+    <div class="chart" id="c-dark"></div>
+  </div>
+
+  <h3 class="prose">8.2 그림자</h3>
+  <div class="prose">
+    <p>그림자 구역은 지도에서 0이고 영상에서도 거의 0이라 정규화 후 분산이 없다. NCC가 정의되지 않으므로 이 구역의 템플릿은 쓸모가 없다. 어두운 화소(&lt; 0.02)가 50%를 넘으면 3.5–6.5 km에서 가용성이 4%로 떨어진다(위 오른쪽 그림).</p>
+  </div>
+  <figure class="fig">
+    <button class="plate" type="button"><img src="fig:f25_shadow_case" alt="같은 자세의 세 조명 영상에서 어두운 화소 비율과 정답 고정 수"></button>
+    <figcaption><span class="fig-no">그림 25</span>기하 16320(고도 9.9 km). 파랑이 어두운 화소다. 측면 조명에서는 46%가 그림자이고 6회 중 0회 고정했다. 같은 자세의 머리 위 조명(3%)은 6회 중 5회, 역광(1%)은 4회 정답이었다.</figcaption>
+  </figure>
+
+  <h3 class="prose">8.3 알려진 한계</h3>
+  <ul class="tight prose">
+    <li>지도와 영상이 같은 DEM에서 나왔다(낙관 편향). "진실 ≠ 지도" 구성은 sim2moon 본 연구에서 한다.</li>
+    <li>태양 쪽 12 km를 넘는 차폐물의 그림자는 지도에서 빠진다(B4).</li>
+    <li>단일 영상이다. LVS는 거친 단계에 영상 3장, 정밀 단계에 연속 영상과 EKF를 쓴다. 저고도 가용성은 연속 영상 필터(P9)로 사전 오차를 줄이면 오를 것으로 본다.</li>
+    <li>nadir 궤적만 V2·V3를 했다. oblique(천저 이탈 27–59°)는 V1만 했다.</li>
+    <li>정밀도 바닥 약 0.6 px는 렌더러 차이에서 온다. 본 연구에서는 같은 항을 sim2moon UE 렌더로 다시 재야 한다(V6).</li>
+  </ul>
+</section>
+
+<!-- 9 -->
+<section class="stage" id="repro">
+  <div class="stage-head"><p class="eyebrow">9 · 재현</p><h2>재현 방법</h2></div>
+  <div class="prose"><p>이 보고서의 그림과 수치는 아래 두 명령으로 다시 만든다. 데이터(<code>data/</code>)와 V2·V3·보정 실행 결과(<code>outputs/</code>)가 있어야 한다. 64코어 장비에서 약 1–2분 걸린다.</p></div>
+  <pre class="cmd">.venv/bin/python scripts/report/make_report_figures.py --out outputs/report
+.venv/bin/python scripts/report/build_report.py --out outputs/report</pre>
+  <div class="prose">
+    <p>예시 실행은 기하 2820, 측면 조명, 사전 시드 7이다. 그림 생성기는 <code>coarse.ransac_position</code>, <code>fine.ransac_position</code>, <code>fine.mahalanobis_gate</code>, <code>fine.refine_pose</code>를 감싸 입력과 출력을 기록할 뿐 알고리즘 코드는 바꾸지 않는다. 같은 난수열로 다시 실행한 결과 자세가 <code>localize()</code>의 결과와 일치함을 실행마다 확인한다. 원값은 <code>outputs/report/stats.json</code>에 있다.</p>
+  </div>
+</section>
+</main>
+</div>
+
+<dialog id="zoom" aria-label="그림 확대"><img alt=""><p>클릭하거나 Esc를 누르면 닫힌다</p></dialog>
+
+<script id="report-data" type="application/json">{{REPORT_DATA}}</script>
+<script>
+(function () {
+  const D = JSON.parse(document.getElementById("report-data").textContent);
+  const A = D.aggregate;
+  const fmtPct = v => (v == null ? "–" : (v * 100).toFixed(v >= 0.995 || v < 0.005 ? 0 : 1) + "%");
+  const fmt1 = v => (v == null ? "–" : v.toFixed(1));
+  const fmt2 = v => (v == null ? "–" : v.toFixed(2));
+  const el = (tag, attrs, html) => { const e = document.createElement(tag); for (const k in attrs || {}) e.setAttribute(k, attrs[k]); if (html != null) e.innerHTML = html; return e; };
+  const NS = "http://www.w3.org/2000/svg";
+  const svgEl = (tag, attrs) => { const e = document.createElementNS(NS, tag); for (const k in attrs || {}) e.setAttribute(k, attrs[k]); return e; };
+
+  // ---------- line chart with crosshair tooltip and data table ----------
+  function lineChart(host, cfg) {
+    host.appendChild(el("h4", {}, cfg.title));
+    if (cfg.sub) host.appendChild(el("p", { class: "sub" }, cfg.sub));
+    const leg = el("div", { class: "legend" });
+    cfg.series.forEach(s => leg.appendChild(el("span", {}, `<i class="${s.dash ? "dash" : ""}" style="background:var(${s.color})"></i>${s.name}`)));
+    host.appendChild(leg);
+    const W = 560, H = cfg.height || 260, m = { l: 48, r: cfg.labelRight ? 92 : 16, t: 12, b: 40 };
+    const svg = svgEl("svg", { viewBox: `0 0 ${W} ${H}`, role: "img", "aria-label": cfg.title });
+    const xs = cfg.x, n = xs.length;
+    const xMin = cfg.xMin != null ? cfg.xMin : xs[0], xMax = cfg.xMax != null ? cfg.xMax : xs[n - 1];
+    const X = v => m.l + (v - xMin) / (xMax - xMin) * (W - m.l - m.r);
+    const Y = v => m.t + (1 - (v - cfg.yMin) / (cfg.yMax - cfg.yMin)) * (H - m.t - m.b);
+    if (cfg.band) {
+      svg.appendChild(svgEl("rect", { class: "band", x: X(cfg.band[0]), y: m.t, width: X(cfg.band[1]) - X(cfg.band[0]), height: H - m.t - m.b }));
+      const t = svgEl("text", { class: "band-t", x: X(cfg.band[0]) + 4, y: H - m.b - 6 }); t.textContent = cfg.band[2]; svg.appendChild(t);
+    }
+    const g = svgEl("g", { class: "grid" });
+    cfg.yTicks.forEach(v => {
+      g.appendChild(svgEl("line", { x1: m.l, x2: W - m.r, y1: Y(v), y2: Y(v) }));
+      const t = svgEl("text", { x: m.l - 8, y: Y(v) + 4, "text-anchor": "end" }); t.textContent = cfg.fmtY(v); svg.appendChild(t);
+    });
+    svg.appendChild(g);
+    (cfg.xTicks || xs).forEach((v, i) => {
+      const t = svgEl("text", { x: X(v), y: H - m.b + 16, "text-anchor": "middle" });
+      t.textContent = cfg.xTickLabels ? cfg.xTickLabels[i] : cfg.fmtX(v); svg.appendChild(t);
+    });
+    const xl = svgEl("text", { x: m.l + (W - m.l - m.r) / 2, y: H - 4, "text-anchor": "middle" }); xl.textContent = cfg.xLabel; svg.appendChild(xl);
+    const ends = [];
+    cfg.series.forEach(s => {
+      let d = "", pen = false;
+      s.values.forEach((v, i) => { if (v == null) { pen = false; return; } d += (pen ? "L" : "M") + X(xs[i]).toFixed(1) + "," + Y(v).toFixed(1); pen = true; });
+      svg.appendChild(svgEl("path", { d, fill: "none", stroke: `var(${s.color})`, "stroke-width": 2, "stroke-dasharray": s.dash ? "5 4" : "none", "stroke-linejoin": "round", "stroke-linecap": "round" }));
+      if (!s.dash) s.values.forEach((v, i) => { if (v != null) svg.appendChild(svgEl("circle", { cx: X(xs[i]), cy: Y(v), r: 3.6, fill: `var(${s.color})`, stroke: "var(--surface)", "stroke-width": 1.5 })); });
+      let li = s.values.length - 1; while (li >= 0 && s.values[li] == null) li--;
+      if (li >= 0) ends.push({ s, y: Y(s.values[li]), x: X(xs[li]) });
+    });
+    if (cfg.labelRight) {
+      ends.sort((a, b) => a.y - b.y);
+      for (let i = 1; i < ends.length; i++) if (ends[i].y - ends[i - 1].y < 13) ends[i].y = ends[i - 1].y + 13;
+      ends.forEach(e => { const t = svgEl("text", { class: "lbl", x: W - m.r + 8, y: e.y + 4 }); t.textContent = e.s.short || e.s.name; svg.appendChild(t); });
+    }
+    const cross = svgEl("line", { class: "cross", y1: m.t, y2: H - m.b, visibility: "hidden" });
+    svg.appendChild(cross);
+    const hit = svgEl("rect", { x: m.l, y: m.t, width: W - m.l - m.r, height: H - m.t - m.b, fill: "transparent" });
+    svg.appendChild(hit);
+    host.appendChild(svg);
+    const tip = el("div", { class: "tip", hidden: "" });
+    host.appendChild(tip);
+    function show(evt) {
+      const r = svg.getBoundingClientRect();
+      const px = (evt.clientX - r.left) / r.width * W;
+      let bi = 0, bd = Infinity;
+      xs.forEach((v, i) => { const dd = Math.abs(X(v) - px); if (dd < bd) { bd = dd; bi = i; } });
+      cross.setAttribute("x1", X(xs[bi])); cross.setAttribute("x2", X(xs[bi])); cross.setAttribute("visibility", "visible");
+      tip.innerHTML = `<b>${cfg.tipX(xs[bi], bi)}</b>` + cfg.series.map(s => `<div class="r"><span><i style="background:var(${s.color})"></i>${s.name}</span><span>${cfg.fmtTip(s.values[bi])}</span></div>`).join("");
+      tip.hidden = false;
+      const hr = host.getBoundingClientRect();
+      let left = (X(xs[bi]) / W) * r.width + (r.left - hr.left) + 12;
+      if (left + tip.offsetWidth > hr.width - 4) left = left - tip.offsetWidth - 24;
+      tip.style.left = Math.max(4, left) + "px";
+      tip.style.top = (r.top - hr.top + 18) + "px";
+    }
+    hit.addEventListener("pointermove", show);
+    hit.addEventListener("pointerdown", show);
+    hit.addEventListener("pointerleave", () => { tip.hidden = true; cross.setAttribute("visibility", "hidden"); });
+    const det = el("details", { class: "data" });
+    det.appendChild(el("summary", {}, "표로 보기"));
+    let t = `<table><thead><tr><th>${cfg.xLabel}</th>` + cfg.series.map(s => `<th class="num">${s.name}</th>`).join("") + "</tr></thead><tbody>";
+    xs.forEach((v, i) => { t += `<tr><td>${cfg.tipX(v, i)}</td>` + cfg.series.map(s => `<td class="num">${cfg.fmtTip(s.values[i])}</td>`).join("") + "</tr>"; });
+    det.insertAdjacentHTML("beforeend", t + "</tbody></table>");
+    host.appendChild(det);
+  }
+
+  const B = A.bands;
+  const bandX = B.map(b => b.band_km);
+  lineChart(document.getElementById("c-avail"), {
+    title: "고도 대역별 가용성 (조명 일치)", sub: "정답 고정 비율과 거친 단계 성공 비율, 대역당 216–774회",
+    x: bandX, xLabel: "명목 고도 대역 (km)", fmtX: v => v, yMin: 0.6, yMax: 1.0, yTicks: [0.6, 0.7, 0.8, 0.9, 1.0], fmtY: v => (v * 100).toFixed(0) + "%",
+    tipX: v => `${v} km 대역`, fmtTip: fmtPct,
+    series: [{ name: "가용성 (정답 고정)", color: "--series-1", values: B.map(b => b.availability) },
+             { name: "거친 단계 성공", color: "--series-2", values: B.map(b => b.coarse_success) }]
+  });
+  lineChart(document.getElementById("c-err"), {
+    title: "정답 고정의 수평 오차", sub: "오차는 정밀 지도 픽셀과 함께 커진다. 비율은 0.82 px 안팎으로 일정하다",
+    x: bandX, xLabel: "명목 고도 대역 (km)", fmtX: v => v, yMin: 0, yMax: 50, yTicks: [0, 10, 20, 30, 40, 50], fmtY: v => v + " m",
+    tipX: v => `${v} km 대역`, fmtTip: v => (v == null ? "–" : v.toFixed(1) + " m"),
+    series: [{ name: "정밀 지도 1 px", color: "--ink-3", dash: true, values: B.map(b => b.map_px) },
+             { name: "오차 95%ile", color: "--series-1", values: B.map(b => b.fine_p95_m) },
+             { name: "오차 중앙값", color: "--series-3", values: B.map(b => b.fine_p50_m) }]
+  });
+
+  // Band table.
+  (function () {
+    let h = `<div class="table-wrap"><table><thead><tr><th>대역</th><th class="num">실행</th><th class="num">가용성</th><th class="num">오고정</th><th class="num">거친 p99</th><th class="num">정밀 p50 / p95</th><th class="num">p95 (px)</th><th class="num">inlier 중앙값</th><th class="num">실행 시간 중앙값*</th></tr></thead><tbody>`;
+    B.forEach(b => {
+      h += `<tr><td>${b.band_km} km</td><td class="num">${b.n}</td><td class="num">${fmtPct(b.availability)}</td><td class="num">${b.false_fix}</td><td class="num">${b.coarse_p99_m.toFixed(0)} m</td><td class="num">${b.fine_p50_m.toFixed(1)} / ${b.fine_p95_m.toFixed(1)} m</td><td class="num">${b.fine_p95_px.toFixed(2)}</td><td class="num">${b.inliers_median.toFixed(0)}</td><td class="num">${b.t_run_median_s.toFixed(1)} s</td></tr>`;
+    });
+    h += `</tbody></table></div><p class="prose" style="font-size:0.8rem;color:var(--ink-3);margin-top:-12px">* 40 프로세스 동시 실행 기준. 지도 생성 시간은 제외.</p>`;
+    document.getElementById("band-table").innerHTML = h;
+  })();
+
+  // Illumination matrix.
+  (function () {
+    const names = ["측면", "머리 위", "역광"];
+    let h = "";
+    for (let i = 0; i < 3; i++) {
+      h += `<tr><th>${names[i]}</th>`;
+      for (let j = 0; j < 3; j++) h += `<td class="num ${i === j ? "diag" : ""}">${(A.illum_matrix[i][j]).toFixed(3)} <span style="color:var(--ink-3)">(${A.illum_angle[i][j].toFixed(0)}°)</span></td>`;
+      h += "</tr>";
+    }
+    document.getElementById("matrix-body").innerHTML = h;
+  })();
+
+  const S = A.sweep;
+  const sn = Object.keys(S.series);
+  lineChart(document.getElementById("c-sweep"), {
+    title: "지도 태양 방위 오프셋 스윕: 가용성", sub: `평가 표본 4번째 기하마다 85개, 조명 일치 3종, ${S.n_runs.toLocaleString()}회 + 0° 기준`,
+    x: S.deltas, xLabel: "지도 태양 방위 오프셋 Δaz (°)", fmtX: v => v + "°", yMin: 0, yMax: 1, yTicks: [0, 0.25, 0.5, 0.75, 1], fmtY: v => (v * 100).toFixed(0) + "%",
+    band: [0, 20, "LVS 운용 범위 ≤ 20°"], labelRight: true,
+    tipX: (v, i) => `Δaz ${v}° (태양 방향 차 ${S.sun_angle[i].toFixed(0)}°)`, fmtTip: fmtPct,
+    series: [{ name: sn[0], color: "--series-2", values: S.series[sn[0]] },
+             { name: sn[1], color: "--series-3", values: S.series[sn[1]] },
+             { name: sn[2], color: "--series-1", values: S.series[sn[2]] }]
+  });
+  lineChart(document.getElementById("c-sweep-err"), {
+    title: "지도 태양 방위 오프셋 스윕: 정밀 오차", sub: "정답 고정의 수평 오차 95%ile, 정밀 지도 px (90°는 정답 고정이 거의 없음)",
+    x: S.deltas, xLabel: "지도 태양 방위 오프셋 Δaz (°)", fmtX: v => v + "°", yMin: 0, yMax: 2.5, yTicks: [0, 0.5, 1, 1.5, 2, 2.5], fmtY: v => v.toFixed(1),
+    band: [0, 20, "LVS 운용 범위 ≤ 20°"],
+    tipX: (v, i) => `Δaz ${v}° (태양 방향 차 ${S.sun_angle[i].toFixed(0)}°)`, fmtTip: v => (v == null ? "–" : v.toFixed(2) + " px"),
+    series: [{ name: "오차 95%ile (px)", color: "--series-1", values: S.fine_p95_px }]
+  });
+
+  const P = A.prior_err;
+  const pc = P.edges_km.slice(0, -1).map((e, i) => (e + P.edges_km[i + 1]) / 2);
+  const pn = Object.keys(P.series);
+  lineChart(document.getElementById("c-prior"), {
+    title: "사전 오차별 가용성 (조명 일치)", sub: "저고도일수록 사전 오차가 클 때 가용성이 크게 떨어진다",
+    x: pc, xMin: 0, xMax: 3, xTicks: [0, 0.5, 1, 1.5, 2, 2.5, 3], xLabel: "사전 수평 오차 (km, 0.5 km 구간 중앙)", fmtX: v => v,
+    yMin: 0.6, yMax: 1.0, yTicks: [0.6, 0.7, 0.8, 0.9, 1.0], fmtY: v => (v * 100).toFixed(0) + "%", labelRight: true,
+    tipX: (v, i) => `사전 오차 ${P.edges_km[i]}–${P.edges_km[i + 1]} km`, fmtTip: fmtPct,
+    series: pn.map((k, i) => ({ name: k, color: ["--series-2", "--series-3", "--series-4", "--series-1"][i], values: P.series[k] }))
+  });
+  const K = A.dark;
+  const kn = Object.keys(K.series);
+  const kLabels = ["0–5%", "5–10%", "10–20%", "20–30%", "30–50%", "> 50%"];
+  lineChart(document.getElementById("c-dark"), {
+    title: "어두운 화소 비율별 가용성 (조명 일치)", sub: "어두운 화소 = 밝기 < 0.02. 표본 10회 미만 구간은 비움",
+    x: [0, 1, 2, 3, 4, 5], xLabel: "영상의 어두운 화소 비율", xTickLabels: kLabels, xTicks: [0, 1, 2, 3, 4, 5], fmtX: v => v,
+    yMin: 0, yMax: 1, yTicks: [0, 0.25, 0.5, 0.75, 1], fmtY: v => (v * 100).toFixed(0) + "%", labelRight: true,
+    tipX: (v, i) => `어두운 화소 ${kLabels[i]}`, fmtTip: fmtPct,
+    series: kn.map((k, i) => ({ name: k, color: ["--series-2", "--series-1"][i], values: K.series[k] }))
+  });
+
+  // Coarse template table.
+  (function () {
+    const T = D.coarse.templates;
+    let h = `<div class="table-wrap"><table><thead><tr><th>템플릿</th><th class="num">피크 높이</th><th class="num">FWHM (px)</th><th class="num">PSR</th><th class="num">부피크/주피크</th><th class="num">오프셋 (m, 지도 x·y)</th><th>판정</th></tr></thead><tbody>`;
+    T.forEach(t => {
+      const v = t.reject ? `<span class="ng">${t.reject}</span>` : (t.geom_inlier ? `<span class="ok">기하 inlier</span>` : `<span class="ng">기하 이상치</span>`);
+      h += `<tr><td>#${t.rank}</td><td class="num">${fmt2(t.peak)}</td><td class="num">${fmt1(t.fwhm)}</td><td class="num">${fmt1(t.psr)}</td><td class="num">${fmt2(t.second)}</td><td class="num">${Math.round(t.offset_m[0]).toLocaleString()}, ${Math.round(t.offset_m[1]).toLocaleString()}</td><td>${v}</td></tr>`;
+    });
+    document.getElementById("coarse-table").innerHTML = h + "</tbody></table></div>";
+  })();
+
+  // Landmark funnels.
+  (function () {
+    function funnel(title, c, drops) {
+      const rows = [["Harris 특징", c.n_features], ["피크 게이트 통과", c.n_matched], ["추정기 입력 (≤ 100)", c.n_used],
+                    ["RANSAC inlier", c.n_used - (c.reject_counts.geometric || 0)], ["최종 inlier", c.n_inliers]];
+      let h = `<div class="funnel"><h4>${title}</h4>`;
+      rows.forEach((r, i) => { h += `<div class="frow ${i === rows.length - 1 ? "final" : ""}"><span class="lab">${r[0]}</span><span class="bar"><i style="width:${(r[1] / c.n_features * 100).toFixed(1)}%"></i></span><span class="v">${r[1]}</span></div>`; });
+      return h + `<p class="drop">${drops}</p></div>`;
+    }
+    const m = D.main_counts, hd = D.hard.final, rc = hd.reject_counts, rm = m.reject_counts;
+    document.getElementById("funnels").innerHTML =
+      funnel("예시 실행 · 조명 일치", m, `거절: 폭 ${rm.peak_wide} · 낮음 ${rm.peak_low} · 모양 ${rm.peak_shape} · 가장자리 ${rm.peak_on_border} · 기하 ${rm.geometric} · Mahalanobis ${rm.mahalanobis}. 재투영 RMS ${m.rms_px.toFixed(3)} px.`) +
+      funnel("같은 영상 · 지도 태양 +45°", hd, `거절: 낮음 ${rc.peak_low} · 폭 ${rc.peak_wide} · 모양 ${rc.peak_shape} · 가장자리 ${rc.peak_on_border} · 기하 ${rc.geometric} · Mahalanobis ${rc.mahalanobis}. 재투영 RMS ${hd.rms_px.toFixed(3)} px, 오차 ${hd.err_h_m.toFixed(1)} m(정답).`);
+  })();
+
+  // Figure zoom.
+  const dlg = document.getElementById("zoom");
+  const dimg = dlg.querySelector("img");
+  document.querySelectorAll(".plate").forEach(b => b.addEventListener("click", () => {
+    const im = b.querySelector("img");
+    dimg.src = im.src; dimg.alt = im.alt;
+    if (typeof dlg.showModal === "function") dlg.showModal();
+  }));
+  dlg.addEventListener("click", () => dlg.close());
+
+  // Active section in the index.
+  const links = Array.from(document.querySelectorAll("#toc-list a"));
+  const map = new Map(links.map(a => [a.getAttribute("href").slice(1), a]));
+  if ("IntersectionObserver" in window) {
+    const io = new IntersectionObserver(entries => {
+      entries.forEach(e => { if (e.isIntersecting) { links.forEach(a => a.classList.remove("active")); const a = map.get(e.target.id); if (a) a.classList.add("active"); } });
+    }, { rootMargin: "-20% 0px -70% 0px" });
+    document.querySelectorAll("section.stage").forEach(s => io.observe(s));
+  }
+})();
+</script>
